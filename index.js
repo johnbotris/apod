@@ -9,7 +9,7 @@ run()
 
 async function run() {
     const apodUrl = "https://apod.nasa.gov/apod/"
-    const outputDir = "/home/john/Pictures/apod"
+    const outputDir = "/home/john/Pictures/Wallpapers/apod"
     const homePage = await getText(apodUrl)
     const imagePath = cheerio.load(homePage)("body img").attr("src")
     const imageName = imagePath.split("/").at(-1)
