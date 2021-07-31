@@ -1,20 +1,31 @@
-import fs from "fs"
+import {createWriteStream} from "fs"
+import {stat} from "fs/promises"
 import {get as _get} from "https"
 import {URL} from "url"
 import cheerio from "cheerio"
 import path from "path"
+import { Command } from "commander"
 
-run()
+const program = new Command()
+    .requiredOption("-o, --output-dir <directory>", "output dir")
+    .parse(process.argv)
 
+run(program.opts())
 
-async function run() {
+async function run({outputDir}) {
+    const absoluteOutputDir = path.resolve(outputDir)
+
+    if (!await directoryExists(absoluteOutputDir)) {
+        console.error(absoluteOutputDir + " doesn't exist or isn't a directory")
+        return process.exit(1)
+    }
+
     const apodUrl = "https://apod.nasa.gov/apod/"
-    const outputDir = "/home/john/Pictures/Wallpapers/apod"
     const homePage = await getText(apodUrl)
     const imagePath = cheerio.load(homePage)("body img").attr("src")
     const imageName = imagePath.split("/").at(-1)
-    const filePath = path.join(outputDir, imageName)
-    const writeStream = fs.createWriteStream(filePath)
+    const filePath = path.join(absoluteOutputDir, imageName)
+    const writeStream = createWriteStream(filePath)
     await getFile(new URL(imagePath, apodUrl), writeStream)
     console.log(filePath)
 }
@@ -40,20 +51,11 @@ async function getFile(url, writeStream) {
     })
 }
 
-
-// just in case
-async function tap(action) {
-    return function(input) {
-        action(input)
-        return input
-    }
+async function directoryExists(path) {
+    const stats = await stat(path).catch(() => null)
+    return stats != null && stats.isDirectory()
 }
 
-Promise.prototype.tap = function(action) {
-    return this.then(tap(action))
-}
-
-// Documented but 0% implementation
 Array.prototype.at = function (idx) {
-    return this[this.length + idx]
+    return this[idx >= 0 ? idx : this.length + idx]
 }
